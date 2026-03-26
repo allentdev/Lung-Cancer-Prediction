@@ -2,24 +2,21 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 import numpy as np
 import cv2
-import streamlit as st
 import os
 
-@st.cache_resource
-def load_cancer_model(model_path="models/lung_cancer_cnn.h5"):
+def load_cancer_model(model_path="models/resnet_lung_cancer.h5"):
     """
     Loads the trained Keras model.
-    Uses st.cache_resource to optimize reloading.
     """
     if not os.path.exists(model_path):
-        st.error(f"Model file not found at: {model_path}")
+        print(f"Model file not found at: {model_path}")
         return None
     
     try:
         model = load_model(model_path, compile=False)
         return model
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        print(f"Error loading model: {e}")
         return None
 
 def predict_image(model, img_array):
@@ -27,10 +24,11 @@ def predict_image(model, img_array):
     Preprocesses the image and runs prediction using the loaded model.
     """
     # Preprocess
-    img = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE)
+    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR) # Read as RGB (or BGR in OpenCV, need to convert)
     img = cv2.resize(img, (224, 224))
-    img = img / 255.0
-    img_input = np.expand_dims(img, axis=(0, -1))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # Convert BGR to RGB
+    img = img / 255.0 # Normalize to [0, 1]
+    img_input = np.expand_dims(img, axis=0) # Add batch dimension
 
     # Predict
     prediction = model.predict(img_input)[0][0]
